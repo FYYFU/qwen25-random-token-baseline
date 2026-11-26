@@ -1,0 +1,436 @@
+{
+  "schema_version": 2,
+  "built_at_utc": "2026-08-29T03:33:51Z",
+  "source_root": "/home/greenland-user/0716-rlsd/data/loongrl_mix_16kkc_orz_rlsd_v3bullets",
+  "output_root": "/home/greenland-user/counterfactual_gated_opsd_20260829/data/loongrl_mix_16kkc_orz_rlsd_v5counterfactual_grpo3bs20",
+  "field_tag": "gptoss120b_v1",
+  "fields": {
+    "text": "key_evidence_ablation__gptoss120b_v1",
+    "valid": "key_evidence_ablation_valid__gptoss120b_v1",
+    "ratio": "key_evidence_ablation_changed_ratio__gptoss120b_v1",
+    "sha": "key_evidence_ablation_source_sha256__gptoss120b_v1"
+  },
+  "eligibility_policy": "OPSD is enabled only when GPT-OSS-120B validates a unique answer-flipping counterfactual and the fixed offline teacher decodes the original answer on gold evidence and the new answer on counterfactual evidence. All other rows remain in GRPO with OPSD disabled.",
+  "generator_files": [
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/generation/full/shard_00.jsonl",
+      "sha256": "c130237cf6fe87d6c30fb4487e255095f0f4223785870d2c8e858ef3a173faa7"
+    },
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/generation/full/shard_01.jsonl",
+      "sha256": "d06071245f4f808c5ff08bb35a9f453778f8282666efb87e919725a8366a6069"
+    },
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/generation/full/shard_02.jsonl",
+      "sha256": "8798e87043ec26bbfc8d2d6fd9a0e37acee98239b957225a57e2117265271faa"
+    },
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/generation/full/shard_03.jsonl",
+      "sha256": "7226b15872246bdcbcd9794b2a159c369ea6c04d76bf12a17b7c50db8f9575ad"
+    },
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/generation/full/shard_04.jsonl",
+      "sha256": "f24c1d22c8aae709004599171fb067d094c3df83bac0a12262fae22d6574ad40"
+    },
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/generation/full/shard_05.jsonl",
+      "sha256": "cbbeda7d2702b59d39037502786d1ac4b0d31b3e1978fa55f55490b0cdbd5224"
+    },
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/generation/full/shard_06.jsonl",
+      "sha256": "f79873f2c77a457a1b3fd634ef2f4bf8874632c8cb6362bf9c05bf61e7515978"
+    },
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/generation/full/shard_07.jsonl",
+      "sha256": "bc2c89a45600ebce4f044d909b10c08d3682aa1a6b347079a8676a6c5796dd12"
+    }
+  ],
+  "certification_files": [
+    {
+      "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/certification/full_grpo3b_s20.jsonl",
+      "sha256": "35623406c515d5183b43852cc332786f962f7fa50e864c5b24ff9d4b5dcc2e64"
+    }
+  ],
+  "teacher_certification": {
+    "checkpoint_sha256": "50bb98a74bc9112e55721e9c06d03d8057dc91658cc1edd2cbb759cbed235ca3",
+    "prompt_version": "production_gold_context_no_header_force_think_v1",
+    "status_counts": {
+      "certified": 10320,
+      "generation_ineligible": 579,
+      "rejected": 4056
+    }
+  },
+  "generation_status_counts": {
+    "failed": 579,
+    "ok": 14376
+  },
+  "source_limitations_file": {
+    "path": "/home/greenland-user/counterfactual_gated_opsd_20260829/scripts/source_limitations.json",
+    "sha256": "1fc869478bd9cd0792d3bdf92b12311702d2028cd38dbc7c3c7b74338d6c6f47"
+  },
+  "source_limitations": [
+    {
+      "source_sha256": "fb8150d3490dbd33a516349364d8df167029fddc9cfaf8156c069cc310fcadf0",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 4,
+      "reason": "The question states that Korn recorded the song and then asks for that same band.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "a0102f47d621d4d585eb10659cb95a523d11115fab5ffcb67d17e73724de58d7",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 322,
+      "reason": "The question names South Australia and asks for its country, directly revealing Australia.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "cd5a65937102e82b36b0cd74e9da7fcd8a07c8824f3cc03188e4d2266568c134",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 568,
+      "reason": "The question states 1886 as the decisive year and then asks for that year.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "581cf02ca2b6cba215d16a8e74dfd2a7557cc4ae45de64885ee880976d0a4424",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 702,
+      "reason": "The question appends Old Trafford after the query.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "5e8e8c668d72d7270603e393e4514554e6c865c77549f73d977cfdb447981ede",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 937,
+      "reason": "The question appends Magnificent Sinner after the query.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "a13b95ac7082a727a406f802e9fa47d1c40979cc0e30cbbb7a6b371cddbc6ebb",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 1483,
+      "reason": "The question names Chouinard Art Institute as the school and then asks for that school.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "9d41ff54d4a575c6647f136b79a803a31e3150f37ef3f62c757ea58c16d001a4",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 1510,
+      "reason": "The district name Uralla-Walcha directly reveals the missing town Uralla.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "2700910a6cd807064075f5ee5f5a7ad548f53fd22e8ce4725078f59f5e142f2c",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 1774,
+      "reason": "The question appends John Lennon after the query.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "65177d76e49fabf2c6ad4415aa6e73d7c603ec5779ff3a4e7cd1f52983bd369b",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 1785,
+      "reason": "Pass Christian School District directly reveals its namesake city.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "9532a4f6f7b00a56c11c2e989d1123d39431f2fd1e7ec746615e8418dbac42ec",
+      "split": "hotpotqa_distractor_2500_5000",
+      "row": 2149,
+      "reason": "The question states that Tyler, The Creator released the song and then asks for the rapper.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "974544f86bfac7c7f5d316012d5255fc7290fb69946e1a8c4c0206ec85907a9d",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 52,
+      "reason": "The title KO Magazine plus the premise that both publications share a format reveals magazine.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "d04d8b5054b16dcb53f3c3324e6e3b1334641f9ab7ce919bf8bbae071b9a36fd",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 57,
+      "reason": "The question calls Thom Yorke the Radiohead singer and then asks for his band.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "8bb039e8436a36a4fb36f43bd87bf55b12330425e4874da25d38f2f77eb3d237",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 186,
+      "reason": "The question states that the liner was built for the British Cunard Line and asks for that organization.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "205e24e43a621a044b73d80ee4c0239878d4ab1ed57463a4695d66233c4d36bb",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 269,
+      "reason": "The animal names Moscow Water Dog and Bavarian Mountain Hound reveal the requested breed type.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "846694d7c087beaf059adc8d2fa11ded88b91d354e19ef4663f2c031674add72",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 552,
+      "reason": "Beatty Airport directly reveals its namesake town Beatty.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "18e6cd33f0ca67a74219a705762a9c67de4e4cc94ad81d48c6a3bbe96ec1dbfa",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 596,
+      "reason": "The question explicitly says Town of Washington and asks for that town.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "aebf23c7329dc1e19532c083bddace0fdfea0015de4e42c7f0ccbd5ba5e9d716",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 710,
+      "reason": "The Voice of Maui County and Maui County Community Television directly reveal the county.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "2fdcde75ddb9a2a0e05af8e8435b121bc7939ae595b8f7ad4f8c56e3ea22b30b",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 713,
+      "reason": "The question calls Lars Ulrich the Metallica drummer and then asks for his band.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "019d065b40897fcd12255de988b8615b41a26ba4b37a9d82e434499c11865f58",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 749,
+      "reason": "The question repeatedly names Tennessee while asking for Kingston's state.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "5c48ed46eccd4a9a69d6480d7b142ee95b351c2141e6f6303d5492454c0278ed",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 1381,
+      "reason": "The eponymous album title Dead Sara uniquely identifies the matching band candidate.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "4d8999c5b4e4087ca42266c0555338432765a0662b463ee235f672672afe7067",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 1585,
+      "reason": "The question states Harsha Chhina, Punjab, India and then asks for the state.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "d3a84a3712fd731054564c02567cfb8fefaea6e92dd43f99362bb9b2631758e4",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 1702,
+      "reason": "Festival Imperial and the flagship-beer wording directly reveal the Imperial brand.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "3b8a86f2fa65f2501bc9b30570306f79e00c1e1e3a7faa0f59d0b8b986375373",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 1770,
+      "reason": "Little Creatures Pale Ale directly reveals the brewing company Little Creatures.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "8f8e4a8c461fe220c318f605a8f188347fbe43a85678ab4464edb3b348d27687",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 1895,
+      "reason": "The question contains an explicit A: John Jeremiah Sullivan annotation.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "e58615b885a9d6d3531f7a86583e79a1086b83d3cc7eda84de21b3203830247b",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 2176,
+      "reason": "The sixth Pretty Cure installment description uniquely matches the Fresh Pretty Cure candidate name.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    },
+    {
+      "source_sha256": "f36bafb87e9cb51c0cb66a77af53ca1c80d0dc6e39ccb0f3ea4507ff45777a15",
+      "split": "hotpotqa_qwen_0_2500",
+      "row": 2439,
+      "reason": "The question names Rock im Park 2001 and then asks for the festival.",
+      "policy": "Keep the row in GRPO and exclude it from key-ablation-gated OPSD.",
+      "counterfactual_reason": "The answer is derivable from the immutable question itself, so editing only evidence passages cannot make a different answer uniquely correct."
+    }
+  ],
+  "parquets": 11,
+  "qa_rows": 14981,
+  "teacher_certified_counterfactuals": 10320,
+  "source_limited": 26,
+  "generation_ineligible": 579,
+  "teacher_rejected": 4056,
+  "excluded_from_opsd": 4661,
+  "certified_changed_ratio": {
+    "count": 10320,
+    "min": 0.00016196954972469424,
+    "median": 0.008196721311475419,
+    "p95": 0.039487726787620026,
+    "max": 0.0985401459854015,
+    "hard_max": 0.1
+  },
+  "non_qa_policy": {
+    "key_evidence_ablation__gptoss120b_v1": "",
+    "key_evidence_ablation_valid__gptoss120b_v1": false,
+    "key_evidence_ablation_changed_ratio__gptoss120b_v1": 0.0,
+    "key_evidence_ablation_source_sha256__gptoss120b_v1": ""
+  },
+  "files": [
+    {
+      "path": "2wikipedia_distractor_2500_5000/train.parquet",
+      "rows": 2500,
+      "qa_rows": 2500,
+      "teacher_certified_counterfactuals": 1851,
+      "source_limited": 0,
+      "generation_ineligible": 34,
+      "teacher_rejected": 615,
+      "source_sha256": "cd9715bc037d853a2e33311a53e9ee8e3c12d998defeddf9ccf63b6afe867fea",
+      "output_sha256": "cb2ac327fc9896f423d49fa51f6d0c50bcbd6c0e93226600a9ccbd2cff779a5e",
+      "output_bytes": 238203537
+    },
+    {
+      "path": "2wikipedia_qwen_0_2500/train.parquet",
+      "rows": 2500,
+      "qa_rows": 2500,
+      "teacher_certified_counterfactuals": 1759,
+      "source_limited": 0,
+      "generation_ineligible": 58,
+      "teacher_rejected": 683,
+      "source_sha256": "b833c31532aec606d452dbb27aaefd07f269d4a6fcb319dd39f308a8f7c1af90",
+      "output_sha256": "753f3a2ee6898a7e0db657db253403e1ae418a023fa488e1a628a8da75ce579e",
+      "output_bytes": 238081248
+    },
+    {
+      "path": "dapo/train.parquet",
+      "rows": 2500,
+      "qa_rows": 0,
+      "teacher_certified_counterfactuals": 0,
+      "source_limited": 0,
+      "generation_ineligible": 0,
+      "teacher_rejected": 0,
+      "source_sha256": "9721952aface3996e85c0d129598e40099c44a867af7587745b9ddaf15fb0e69",
+      "output_sha256": "40ebacd4475fc079a9028af564c75c332a46a80dc748b73cbc841913f7303cb3",
+      "output_bytes": 318289
+    },
+    {
+      "path": "hotpotqa_distractor_2500_5000/train.parquet",
+      "rows": 2500,
+      "qa_rows": 2500,
+      "teacher_certified_counterfactuals": 1962,
+      "source_limited": 10,
+      "generation_ineligible": 80,
+      "teacher_rejected": 448,
+      "source_sha256": "753cc1c0884ab4485e9b5dcf42d3a0e4fd3087d322aa7daada9b7af1082641db",
+      "output_sha256": "c470ab645b7ea629fde85dd5b12b52344f8fc318caa14f2fe6115341c720ca25",
+      "output_bytes": 258873175
+    },
+    {
+      "path": "hotpotqa_qwen_0_2500/train.parquet",
+      "rows": 2499,
+      "qa_rows": 2499,
+      "teacher_certified_counterfactuals": 1867,
+      "source_limited": 16,
+      "generation_ineligible": 112,
+      "teacher_rejected": 504,
+      "source_sha256": "b2bd0edebab90b3fc5c0b1bb7b5e0e6b6fbf2b76d8598ea49a25133bbe583da6",
+      "output_sha256": "7058daf0ba25ec01c19442988dc664285200c7e80a4d74aa63de43fcc4897286",
+      "output_bytes": 259010543
+    },
+    {
+      "path": "mathqa_choice/train.parquet",
+      "rows": 2500,
+      "qa_rows": 0,
+      "teacher_certified_counterfactuals": 0,
+      "source_limited": 0,
+      "generation_ineligible": 0,
+      "teacher_rejected": 0,
+      "source_sha256": "aae77fa5c6239f89f58a128f9ce09b6c82961ff2a22669840307cd959cfe4892",
+      "output_sha256": "844839cd8655f6fb95e87b53cb781791b5222f96f41ee17672bf11c31cbe315d",
+      "output_bytes": 225421
+    },
+    {
+      "path": "mathqa_choice/valid.parquet",
+      "rows": 20,
+      "qa_rows": 0,
+      "teacher_certified_counterfactuals": 0,
+      "source_limited": 0,
+      "generation_ineligible": 0,
+      "teacher_rejected": 0,
+      "source_sha256": "e20cde5f2406f6fbab21f3d9088b67e031c9dd7d4fb40efb0b514ab6956cd661",
+      "output_sha256": "7edde41341a045e2bf893665512cc9b2b2ff6eed800fab7cee7e485f68904fb5",
+      "output_bytes": 10783
+    },
+    {
+      "path": "musique_distractor_2500_5000/train.parquet",
+      "rows": 2492,
+      "qa_rows": 2492,
+      "teacher_certified_counterfactuals": 1423,
+      "source_limited": 0,
+      "generation_ineligible": 149,
+      "teacher_rejected": 920,
+      "source_sha256": "976d3aa6cf5616c6302468dee411de21760793c8b933858bf118bb349fe4b1eb",
+      "output_sha256": "1fba13d0c1a2e328ee12462ff402742758d02f22a624694f16fef2b1439842c2",
+      "output_bytes": 271877089
+    },
+    {
+      "path": "musique_qwen_0_2500/train.parquet",
+      "rows": 2490,
+      "qa_rows": 2490,
+      "teacher_certified_counterfactuals": 1458,
+      "source_limited": 0,
+      "generation_ineligible": 146,
+      "teacher_rejected": 886,
+      "source_sha256": "9be0d5cf05b968b77078751b80fd8deb788905ebef92cd41fd91e645f9f4a5cb",
+      "output_sha256": "59077ce5ea7e69eb09fe3113b6d350142319ea0fe738e4c96584cd3dc4a16769",
+      "output_bytes": 271535436
+    },
+    {
+      "path": "ruler_multikey/train.parquet",
+      "rows": 512,
+      "qa_rows": 0,
+      "teacher_certified_counterfactuals": 0,
+      "source_limited": 0,
+      "generation_ineligible": 0,
+      "teacher_rejected": 0,
+      "source_sha256": "f36bf46e8cd9c4ac33f2e978d359c113b1fb033f20907149a7a45325211ea3c1",
+      "output_sha256": "fe7b454f9cbf9f2ddd13aa9e1a9d6df6b56570fe94f439914f43fada4326a23e",
+      "output_bytes": 141668
+    },
+    {
+      "path": "ruler_multivalue/train.parquet",
+      "rows": 512,
+      "qa_rows": 0,
+      "teacher_certified_counterfactuals": 0,
+      "source_limited": 0,
+      "generation_ineligible": 0,
+      "teacher_rejected": 0,
+      "source_sha256": "a5967c5fcd61f88caffe0e027aa73c00d7ee7b9546cca65615d99f859cda60f0",
+      "output_sha256": "633f2581a9747d5c5d400300860332718962544a71b5591b53d311dff0e35889",
+      "output_bytes": 95768
+    }
+  ]
+}

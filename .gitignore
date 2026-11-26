@@ -1,0 +1,10 @@
+/.venv/
+/models/
+/runs/
+/.cache/
+__pycache__/
+*.py[cod]
+.DS_Store
+._*
+*.egg-info/
+.env

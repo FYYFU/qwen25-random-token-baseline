@@ -1,0 +1,59 @@
+{
+  "model": "Qwen2.5-1.5B-Instruct",
+  "profile": "pilot",
+  "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+  "exit_code": 0,
+  "sample_interval_seconds": 0.25,
+  "optimizer_probes": [
+    {
+      "rank": 0,
+      "optimizer_step": 1.0,
+      "grad_norm": 9.711817741394043,
+      "before": 0.02783203125,
+      "after": 0.027830030769109726,
+      "delta": -2.000480890274048e-06
+    },
+    {
+      "rank": 1,
+      "optimizer_step": 1.0,
+      "grad_norm": 9.711817741394043,
+      "before": 0.033447265625,
+      "after": 0.033448297530412674,
+      "delta": 1.0319054126739502e-06
+    },
+    {
+      "rank": 2,
+      "optimizer_step": 1.0,
+      "grad_norm": 9.711817741394043,
+      "before": 0.007110595703125,
+      "after": 0.007109067402780056,
+      "delta": -1.5283003449440002e-06
+    },
+    {
+      "rank": 3,
+      "optimizer_step": 1.0,
+      "grad_norm": 9.711817741394043,
+      "before": 0.00194549560546875,
+      "after": 0.001946319593116641,
+      "delta": 8.239876478910446e-07
+    }
+  ],
+  "gpu_peak_MiB": {
+    "4": {
+      "trial_MiB": 31828.0,
+      "device_MiB": 33874.3
+    },
+    "5": {
+      "trial_MiB": 31828.0,
+      "device_MiB": 34040.3
+    },
+    "6": {
+      "trial_MiB": 31854.0,
+      "device_MiB": 32497.0
+    },
+    "7": {
+      "trial_MiB": 31854.0,
+      "device_MiB": 33984.3
+    }
+  }
+}
