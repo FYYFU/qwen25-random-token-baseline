@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from statistics import mean
 
+import yaml
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("run", type=Path, help="the directory printed by run.sh")
 root = parser.parse_args().run
@@ -22,7 +24,8 @@ for row in steps:
     print(f"{row['step']:4}  {d['timing_s/step']:7.2f}  {d['reward_rejection/kept_rows']:13.0f}"
           f"  {d['reward_rejection/skip_update']:7.0f}  {d.get('actor/grad_norm', 0):9.4g}")
 print(f"Mean step time: {mean(s['data']['timing_s/step'] for s in steps):.2f} s")
-for rank in range(4):
+world_size = yaml.safe_load((root / "trial.yaml").read_text())["n_gpus_per_node"]
+for rank in range(world_size):
     path = root / f"optimizer_rank{rank}.jsonl"
     probes = [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
     print(f"Rank {rank}: {len(probes)} optimizer call(s), "
@@ -33,7 +36,7 @@ with (root / "gpu.csv").open() as f:
         gpu = int(row["gpu"])
         trial, device = peaks.get(gpu, (0, 0))
         peaks[gpu] = max(trial, float(row["trial_MiB"])), max(device, float(row["device_MiB"]))
-if len(peaks) != 4:
+if len(peaks) != world_size:
     raise SystemExit("Incomplete GPU sampling. See monitor.log.")
 print("GPU  job peak (GiB)  device peak (GiB)")
 for gpu, (trial, device) in sorted(peaks.items()):

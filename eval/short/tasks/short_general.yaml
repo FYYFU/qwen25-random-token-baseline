@@ -1,0 +1,26 @@
+group: short_general_non_mmlu
+group_alias: Short-context general evaluation (excluding MMLU)
+task:
+  - task: arc_challenge
+    fewshot_split: train
+    num_fewshot: 25
+  - task: hellaswag
+    fewshot_split: train
+    num_fewshot: 10
+  - task: winogrande
+    fewshot_split: train
+    num_fewshot: 5
+  - task: minerva_math
+    # The historical step-41 result resolved this task to the 546 precalculus items.
+    dataset_name: precalculus
+    num_fewshot: 4
+    generation_kwargs:
+      until:
+        - "Problem:"
+      do_sample: false
+      temperature: 0
+      max_gen_toks: 3072
+  - task: ifeval
+    num_fewshot: 0
+metadata:
+  version: 1.0

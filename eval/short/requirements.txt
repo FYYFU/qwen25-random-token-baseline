@@ -1,0 +1,8 @@
+-r ../requirements-generate.txt
+lm_eval[ifeval] @ git+https://github.com/EleutherAI/lm-evaluation-harness.git@b954108c9baaaa934b4ad842033b31a97ee30816
+datasets==5.0.0
+accelerate==1.14.0
+tokenizers==0.22.2
+safetensors==0.8.0
+math-verify[antlr4_11_0]==0.9.0
+latex2sympy2-extended==1.11.0

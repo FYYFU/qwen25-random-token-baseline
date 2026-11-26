@@ -71,11 +71,13 @@ def write_config(profile, train, val, model, target):
     cfg = yaml.safe_load((ROOT / "configs/random.yaml").read_text())
     if profile == "pilot":
         cfg.update(per_device_batch_size=2, ppo_mini_batch_size=8, total_training_steps=1,
-                   data_seed=42, val_max_samples=-1, save_steps=-1)
+                   data_seed=42, val_max_samples=-1, save_steps=-1, n_gpus_per_node=4,
+                   vllm_tensor_parallel_size=1, vllm_gpu_memory_utilization=0.5,
+                   actor_ppo_micro_batch_size_per_gpu=1, update_weights_bucket_megabytes=1024)
     target = target.resolve()
     cfg.update(model_path=str(model), train_files=[str(p) for p in train],
                val_files=[str(val)], custom_reward_function_path=str(ROOT / "training/loongrl_reward_repro.py"),
-               experiment_name=f"experiment1_random_{profile}", output_dir=str(target.parent))
+               experiment_name=f"qwen25_random_{profile}", output_dir=str(target.parent))
     target.write_text(yaml.safe_dump(cfg, sort_keys=False))
     print(f"Saved {target}")
 

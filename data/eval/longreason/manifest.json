@@ -1,0 +1,92 @@
+{
+  "dataset": "lz1bytedance/LongReason",
+  "revision": "2b080b67248d3faa575a143c2d300e6fa1bb21c9",
+  "config": {
+    "out": "data/eval/longreason",
+    "tiers": [
+      "8k",
+      "16k",
+      "32k",
+      "64k"
+    ],
+    "revision": "2b080b67248d3faa575a143c2d300e6fa1bb21c9",
+    "sample_k": 0,
+    "parquet_cache": null,
+    "drop_parquet": true
+  },
+  "category_blocks": [
+    [
+      "reading_comprehension",
+      0,
+      280
+    ],
+    [
+      "logic",
+      280,
+      627
+    ],
+    [
+      "math",
+      627,
+      794
+    ]
+  ],
+  "tiers": {
+    "8k": {
+      "n": 794,
+      "n_upstream": 794,
+      "categories": {
+        "reading_comprehension": 280,
+        "logic": 347,
+        "math": 167
+      },
+      "random_baseline": 25.212,
+      "prompt_chars_p50": 23009,
+      "prompt_chars_max": 25682,
+      "unparsed_options": [],
+      "gold_out_of_range": []
+    },
+    "16k": {
+      "n": 794,
+      "n_upstream": 794,
+      "categories": {
+        "reading_comprehension": 280,
+        "logic": 347,
+        "math": 167
+      },
+      "random_baseline": 25.212,
+      "prompt_chars_p50": 53051,
+      "prompt_chars_max": 57532,
+      "unparsed_options": [],
+      "gold_out_of_range": []
+    },
+    "32k": {
+      "n": 794,
+      "n_upstream": 794,
+      "categories": {
+        "reading_comprehension": 280,
+        "logic": 347,
+        "math": 167
+      },
+      "random_baseline": 25.212,
+      "prompt_chars_p50": 113135,
+      "prompt_chars_max": 117997,
+      "unparsed_options": [],
+      "gold_out_of_range": []
+    },
+    "64k": {
+      "n": 794,
+      "n_upstream": 794,
+      "categories": {
+        "reading_comprehension": 280,
+        "logic": 347,
+        "math": 167
+      },
+      "random_baseline": 25.212,
+      "prompt_chars_p50": 233606,
+      "prompt_chars_max": 240938,
+      "unparsed_options": [],
+      "gold_out_of_range": []
+    }
+  }
+}

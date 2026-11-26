@@ -1,22 +1,29 @@
-# Experiment 1 · Qwen2.5-1.5B Random token selection
+# Qwen2.5-1.5B Random token baseline
 
-本实验训练一个与 CF-OPSDL 蒸馏 token 数量匹配的 Random baseline。对每条符合认证条件的回答，用原 CF 判据计算应选的 token 数 K，再从该回答的有效位置中均匀、无放回地抽取 K 个位置做蒸馏。损失沿用原实验的分母。两次教师前向都参与计算 K，训练只产生 Random 这一组模型。
+在 Qwen2.5-1.5B-Instruct 上复现与 CF-OPSDL 蒸馏预算匹配的 Random 对照。对每条符合蒸馏条件的回答，先按历史 CF 门限计算有效 token 数 K，再在这条回答的有效位置中均匀、无放回地抽取 K 个。两次教师前向、蒸馏目标、损失分母和 GRPO 奖励均沿用原设置。正式任务只训练一个 Random 模型，比较点为第 41 步。
 
-| 设置 | `pilot` 四卡试跑 | `full` 正式实验 |
+## 训练
+
+| 参数 | 正式实验 `full` | 小样本试跑 `pilot` |
 |---|---:|---:|
-| 训练 / 验证样本 | 12 / 3 | 21,005 / 20 |
-| 每步问题数 × 每题回答数 | 8 × 8 | 512 × 8 |
-| PPO mini-batch（按问题计，过滤前） | 8 | 512 |
-| 训练步数 | 1 | 41，1 个 epoch |
-| 检查点 | 关闭 | 10、20、30、40、41 |
+| GPU / rollout tensor parallel | 8 / 2 | 4 / 1 |
+| 训练 / 验证文件中的样本数 | 21,005 / 20 | 12 / 3 |
+| 每步问题数 × 每题采样数 | 512 × 8 | 8 × 8 |
+| PPO mini-batch（过滤前的问题数） | 512 | 8 |
+| actor micro-batch / 每卡 | 2 | 1 |
+| vLLM GPU memory utilization | 0.70 | 0.50 |
+| 训练步数 | 41（1 epoch） | 1 |
+| 保存检查点 | 10、20、30、40、41 | 关闭 |
 
-两档均使用 4 张 GPU、FSDP、rollout TP=1、学习率 2e-6，输入 / 输出上限为 16,416 / 8,192 token。蒸馏系数 μ=0.03，门限 τ=0.1，参考策略 KL 系数 0.001，教师每 5 次优化器更新同步一次。每题全对或全错时丢弃该组回答，整个 batch 都被过滤时，该训练步跳过参数更新。正式配置采用历史分片顺序、shuffle 和原始 data seed 设置，pilot 固定 data seed 为 42。历史 CF 使用 8 卡、TP=2；两者的正式全局 batch 和训练步数相同。参数详见 [random.yaml](configs/random.yaml)。
+正式训练使用 FSDP、FP32 主权重、学习率 2e-6、KL 系数 0.001、蒸馏系数 μ=0.03、门限 τ=0.1、教师 top-100、每 5 次优化器更新同步一次快照。输入 / 输出上限为 16,416 / 8,192 token。每个 rollout DP 组处理 128 道题。8 张卡分为 4 个 TP=2 的组，每步生成 4,096 条回答。每题全对或全错时丢弃该组，整步都被过滤时跳过更新。[训练配置](configs/random.yaml)
 
-## 安装
+### 安装与启动
 
-进入本目录。推荐在一台 Linux x86_64 机器使用 Python 3.12、支持 CUDA 12.8 的 NVIDIA 驱动和带 `nvcc` 的 CUDA toolkit。小样本试跑使用 4 张 48 GiB RTX 6000 Ada。正式档默认给 Ray 对象存储分配 32 GiB，共享内存和主机内存应能容纳此分配及训练进程。可用 `RAY_OBJECT_STORE_BYTES` 覆盖。将运行目录放在有空间保存 5 个分布式检查点的磁盘上。
+先在 GitHub 获得本私有仓库的读取权限，在 Linux x86_64、带 CUDA 12.8 toolkit 和 nvcc 的训练机上执行下列命令。训练环境沿用已通过四卡试跑的 Python 3.12、PyTorch 2.8.0、vLLM 0.11.0。正式档恢复历史训练参数；八卡机器的型号、单卡显存、CPU 和互联会影响实际耗时与容量。
 
 ```bash
+git clone https://github.com/FYYFU/qwen25-random-token-baseline.git
+cd qwen25-random-token-baseline
 git lfs install --local
 git lfs pull
 python3.12 -m venv .venv
@@ -26,37 +33,22 @@ python -m pip install -r requirements-linux-cu128.lock
 MAX_JOBS=4 python -m pip install --no-build-isolation flash-attn==2.8.1
 python -m pip check
 python scripts/prepare.py full
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 ./run.sh full
 ```
 
-最后一条命令核对完整数据的 SHA-256，可在启动 GPU 前执行。锁文件固定了 Linux 的 PyTorch 2.8.0 / CUDA 12.8、vLLM 0.11.0、Transformers 4.57.6 等依赖。CuPy 和 OpenCV 选择了与 NumPy 1.26 兼容的版本。FlashAttention 在安装 PyTorch 后构建。启动器从仓库内的 `RLCSD/third_party/verl` 导入定制训练代码。
+首次运行自动下载并校验基础模型 revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`。离线运行时，可设置 `MODEL_PATH` 指向该 revision 的本地快照。训练器和 Random 选择器随仓库交付。正式档使用历史分片顺序、shuffle 和原 data seed，默认由 Ray 分配对象存储。启动前为 5 个分布式检查点预留磁盘空间。
 
-## 运行
+如需先验证环境，使用 `CUDA_VISIBLE_DEVICES=0,1,2,3 ./run.sh pilot`。试跑独立从基础模型开始，固定 data seed 为 42。历史四卡 RTX 6000 Ada 试跑中，单步耗时 70.54 秒，8 题中有 1 题通过过滤，4 个 rank 均测到参数变化。[试跑指标](reference/pilot_metrics.jsonl) · [各卡显存与权重变化](reference/pilot_hardware.json)
 
-```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-./run.sh pilot
-./run.sh full
-```
+### 数据与输出
 
-两条命令分别从同一基础模型开始。首次运行自动下载并校验 `Qwen/Qwen2.5-1.5B-Instruct` 的 revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`。离线机器可将 `MODEL_PATH` 指向这个 revision 的本地快照；程序校验权重、配置和 tokenizer 内容。正式任务可在 tmux 或作业调度器中运行。
+- `data/full/` 含 v5 counterfactual 的 10 个训练 Parquet、1 个验证 Parquet、原 manifest 与校验和。训练包括 HotpotQA、MuSiQue、2Wiki 的六个 QA 分片，以及 MathQA、DAPO、RULER multikey 和 multivalue。每个 epoch 包含 41 个完整 batch，末尾 13 条按原规则丢弃。验证文件含 20 条 MathQA，历史配置最多加载 1 条，训练中关闭验证。
+- `data/pilot/` 含三类 QA 各 4 条认证训练样本及合计 3 条验证样本。正式训练和全部评测数据均随 Git LFS 交付。
+- 启动器会打印形如 `runs/full/<run-id>` 的目录。运行 `python scripts/report.py runs/full/<run-id>` 可查看每步耗时、过滤后保留回答数、各 rank 实际测到的参数变化次数，以及每张卡的显存峰值。显存按 0.25 秒采样，同时记录本任务及整卡用量。
+- 交付结果时保留 `trial.yaml`、`metrics.jsonl`、`gpu.csv`、各 rank 的 `optimizer_rank*.jsonl` 和 step 41 actor，并注明 GPU 型号。正式八卡 Random 的成绩需由该次训练与评测产生。
 
-在 **mlnlp** 上，使用以下已通过四卡试跑的环境设置，再执行上面的启动命令。
+## 评测第 41 步
 
-```bash
-export CUDA_VISIBLE_DEVICES=4,5,6,7
-export CUDA_HOME=/usr/lib/cuda
-export NCCL_P2P_DISABLE=1 NCCL_IB_DISABLE=1 NCCL_SOCKET_IFNAME=lo
-```
+[完整评测步骤与参数](eval/README.md) 包含 FSDP 合并、五项 LongBench QA、LongReason 8K–64K 和六项短上下文评测的启动命令。LongBench QA 使用 AWS Bedrock GPT-OSS-120B 判分。LongReason 与短上下文评测均可用本地数据打分。
 
-## 数据和结果
-
-- `data/full/` 含 v5 counterfactual 数据的全部 11 个原始 Parquet、原始 manifest 和 SHA-256 清单。训练由 HotpotQA、MuSiQue、2Wiki 的六个 QA 分片，以及 MathQA、DAPO、RULER multikey 和 multivalue 组成。验证分片是 MathQA 的 20 条记录；历史配置最多加载 1 条，训练中关闭验证。21,005 条训练样本形成 41 个完整的 512 题 batch，最后 13 条按原训练规则丢弃。
-- `data/pilot/` 含 HotpotQA、MuSiQue、2Wiki 各 4 条认证训练样本和合计 3 条验证样本。它们用于检查四卡通信、回答生成、奖励过滤和参数更新。
-- 启动器打印本次运行目录。运行 `python scripts/report.py runs/full/<运行目录>` 可查看各步耗时、过滤后保留的回答数、四个 rank 的优化器记录和各卡显存峰值。显存按 0.25 秒采样，分别统计本任务进程与整卡用量。原始记录位于该目录下的 `gpu.csv`、`optimizer_rank*.jsonl` 和下一级时间戳目录的 `metrics.jsonl`。最终检查点在同一时间戳目录的 `global_step_41/actor/`。
-- 交付实验结果时，请带上 step 41 检查点、`trial.yaml`、`metrics.jsonl`、`gpu.csv` 和四份优化器记录，并注明 GPU 型号。五项 LongBench QA 历史 CF 均分为 46.64，对应 step 41；本目录交付的是 Random 训练任务。
-
-[已完成的 pilot 指标](reference/pilot_metrics.jsonl) 和 [参数变化及显存记录](reference/pilot_hardware.json) 来自一次四卡单步实测，单步 70.54 秒，8 题中 1 题通过组过滤，4 个 rank 均记录到参数变化。正式 Random 的 41 步仍待运行。
-
-## 上传到 GitHub
-
-本目录可以单独作为仓库根目录，也可以作为已有仓库的 `experiment1/` 子目录。完整 Parquet 约 1.43 GiB，已配置 Git LFS。首次在目标 Git 仓库执行 `git lfs install --local`，添加文件后用 `git lfs ls-files` 确认列出 **11 个**完整数据分片，再提交和推送。小样本直接存入 Git。模型缓存、训练输出和虚拟环境已由本目录的 `.gitignore` 排除。RLCSD 和 veRL 的上游许可保存在各自源码目录。
+作为核对，历史 1.5B CF 的 step 41 在 LongBench QA 上均分为 **46.64**，LongReason 均分为 **43.38**。这两组数值已由历史逐条记录回算。[历史 CF 各项成绩](reference/step41_cf_scores.json)

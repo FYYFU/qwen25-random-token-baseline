@@ -1,0 +1,7 @@
+benchmark	lm_eval_task	fewshot	metric	samples	decoding
+MMLU	mmlu	5	acc	14042	standard multiple choice
+ARC-Challenge	arc_challenge	25	acc_norm	1172	standard multiple choice
+HellaSwag	hellaswag	10	acc_norm	10042	standard multiple choice
+WinoGrande	winogrande	5	acc	1267	standard multiple choice
+Minerva MATH	minerva_math	4	math_verify	546	greedy; temperature=0; max_gen_toks=3072; until=Problem:
+IFEval	ifeval	0	prompt_level_strict_acc and inst_level_strict_acc	541	standard task generation

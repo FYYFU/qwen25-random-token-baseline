@@ -1,0 +1,18 @@
+{
+  "model": "Qwen2.5-1.5B-Instruct CF-OPSDL",
+  "checkpoint_step": 41,
+  "distill_coef": 0.03,
+  "kl_loss_coef": 0.001,
+  "LongBench QA (percent)": {
+    "2wikimqa": 58.8, "hotpotqa": 63.5, "musique": 37.4,
+    "narrativeqa": 28.3, "qasper": 45.2, "avg": 46.64
+  },
+  "LongReason (percent)": {
+    "8k": 47.10, "16k": 44.58, "32k": 43.68, "64k": 38.16, "avg": 43.38
+  },
+  "short-context (fraction, historical table precision)": {
+    "mmlu": 0.596496, "arc_challenge": 0.526451, "hellaswag": 0.673173,
+    "winogrande": 0.665351, "minerva_math": 0.342491,
+    "ifeval_prompt_strict": 0.406654, "ifeval_inst_strict": 0.522782
+  }
+}
