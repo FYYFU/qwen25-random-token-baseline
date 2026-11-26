@@ -4,7 +4,7 @@
 
 ## 1. 合并训练检查点
 
-在训练环境中，将 `RUN_DIR` 设为 `./run.sh full` 打印的那一次正式训练目录。合并读取八个 FSDP rank 的 actor 分片，在 CPU 上生成供 vLLM 加载的模型和 tokenizer。
+在训练环境中，将 `RUN_DIR` 设为 对应实验的 `./run.sh full <实验名>` 打印的运行目录。合并读取八个 FSDP rank 的 actor 分片，在 CPU 上生成供 vLLM 加载的模型和 tokenizer。
 
 ```bash
 source .venv/bin/activate
@@ -15,7 +15,7 @@ RESULTS="$RUN_DIR/eval-step41"
 python eval/run.py merge "$ACTOR" "$MODEL"
 ```
 
-将示例中的 `<run-id>` 替换成你的实际目录名。后续命令沿用同一个 shell 中的 `MODEL` 和 `RESULTS`。
+分别评测三个实验，每次将 `<run-id>` 替换为带有该实验名前缀的实际目录名。后续命令沿用同一个 shell 中的 `MODEL` 和 `RESULTS`。
 
 ## 2. 准备评测环境
 

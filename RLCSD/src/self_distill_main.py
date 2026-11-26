@@ -1553,20 +1553,22 @@ def _compute_teacher_log_probs(self, batch: DataProto) -> DataProto | None:
                 f"got sequence scores {unique_scores[:16]}"
             )
         teacher_batch.batch["distill_sample_mask"] = sequence_scores < 0.5
-    if _cfg_bool(self, "distill_key_ablation_gate", False):
-        if loss_mode not in ("opsd", "grpo_opsd"):
-            raise ValueError(
-                "distill_key_ablation_gate=True is supported only for "
-                "loss_mode=opsd or grpo_opsd."
-            )
-        if _resolve_teacher_view(self) != "gold_only":
-            raise ValueError(
-                "distill_key_ablation_gate=True requires teacher_view=gold_only "
-                "so the gate and the OPSD target share the intended gold view."
-            )
+    use_cf_gate = _cfg_bool(self, "distill_key_ablation_gate", False)
+    certified_only = use_cf_gate or _cfg_bool(self, "distill_certified_only", False)
+    if certified_only:
+        if loss_mode not in ("opsd", "grpo_opsd") or _resolve_teacher_view(self) != "gold_only":
+            raise ValueError("Certified distillation requires OPSD with the gold-only teacher")
         keyabl_contexts, keyabl_eligible = _extract_key_ablation_contexts(
             self, batch, gold_contexts, data_sources
         )
+        if len(keyabl_eligible) != batch_size:
+            keyabl_eligible = _expand_to_rollout(
+                keyabl_eligible, batch_size, self.config.actor_rollout_ref.rollout.n
+            )
+        teacher_batch.batch["distill_key_ablation_sample_mask"] = torch.tensor(keyabl_eligible, dtype=torch.bool)
+        aligned_context["keyabl_gate_eligible"] = keyabl_eligible
+
+    if use_cf_gate:
         keyabl_payloads = _build_teacher_context_payloads(
             self,
             problems,
@@ -1585,20 +1587,13 @@ def _compute_teacher_log_probs(self, batch: DataProto) -> DataProto | None:
             teacher_keyabl_prompts = _expand_to_rollout(
                 teacher_keyabl_prompts, batch_size, rollout_n
             )
-            keyabl_eligible = _expand_to_rollout(
-                keyabl_eligible, batch_size, rollout_n
-            )
         aligned_context["teacher_keyabl_prompts"] = teacher_keyabl_prompts
-        aligned_context["keyabl_gate_eligible"] = keyabl_eligible
         keyabl_batch = _build_teacher_batch_from_prompts(
             self,
             teacher_prompts=teacher_keyabl_prompts,
             responses=responses,
             prefix="teacher_keyabl",
             response_lengths=response_valid_lengths,
-        )
-        keyabl_batch.batch["distill_key_ablation_sample_mask"] = torch.tensor(
-            keyabl_eligible, dtype=torch.bool
         )
         teacher_batch = teacher_batch.union(keyabl_batch)
     if loss_mode in TWO_TEACHER_VIEW_LOSS_MODES:
@@ -1644,7 +1639,7 @@ def _compute_teacher_log_probs(self, batch: DataProto) -> DataProto | None:
             # which for grpo_opsd also means exact GRPO on those rows since the
             # PG half never reads the mask. data_sources comes from
             # _extract_problems_answers_solutions and is already batch-sized.
-            if _cfg_bool(self, "distill_key_ablation_gate", False):
+            if certified_only:
                 rlsd_eligible = keyabl_eligible
             else:
                 rlsd_eligible = [

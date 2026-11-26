@@ -4,9 +4,13 @@ cd "$(dirname "$0")"
 root="$PWD"
 case "${1:-}" in
     pilot|full) profile=$1 ;;
-    *) echo "Usage: ./run.sh {pilot|full}" >&2; exit 2 ;;
+    *) echo "Usage: ./run.sh {pilot|full} [random|kl-topk|certified-dense]" >&2; exit 2 ;;
 esac
-[[ $# == 1 ]] || { echo "Expected a single profile argument." >&2; exit 2; }
+[[ $# -le 2 ]] || { echo "Expected a profile and an optional experiment." >&2; exit 2; }
+case "${2-random}" in
+    random|kl-topk|certified-dense) experiment=${2-random} ;;
+    *) echo "Unknown experiment: $2" >&2; exit 2 ;;
+esac
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 if [[ $profile == full ]]; then
     expected_gpus=8
@@ -31,9 +35,9 @@ export CUDA_HOME="${CUDA_HOME:-/usr/local/cuda}" OMP_NUM_THREADS="${OMP_NUM_THRE
 export NCCL_NET_PLUGIN="${NCCL_NET_PLUGIN:-none}" NCCL_NVLS_ENABLE="${NCCL_NVLS_ENABLE:-0}"
 export REWARD_CALC_TYPE=pure_exact_match RULER_REWARD_CALC_TYPE=format_exact_match
 mkdir -p "$root/runs/$profile"
-run="$(mktemp -d "$root/runs/$profile/$(date -u +%Y%m%dT%H%M%SZ).XXXXXX")"
-echo "Qwen2.5 Random ($profile) logs and output: $run"
-"$PYTHON_BIN" scripts/prepare.py "$profile" --output-config "$run/trial.yaml"
+run="$(mktemp -d "$root/runs/$profile/${experiment}_$(date -u +%Y%m%dT%H%M%SZ).XXXXXX")"
+echo "Qwen2.5 $experiment ($profile) logs and output: $run"
+"$PYTHON_BIN" scripts/prepare.py "$profile" --experiment "$experiment" --output-config "$run/trial.yaml"
 export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 CFOPSDL_TELEMETRY_DIR="$run"
 CUDA_VISIBLE_DEVICES="${devices[0]}" "$PYTHON_BIN" scripts/check_random_gate.py --qwen2
 date +%s > "$run/start_unix"

@@ -546,7 +546,7 @@ export VERL_FILE_LOGGER_PATH="${DIR}/metrics.jsonl"
 # --- Build algorithm-specific overrides from YAML ---
 ALGO=""
 for key in beta jsd_token_clip teacher_mode \
-           full_logit_distill distill_add_tail distill_coef distill_wrong_only \
+           full_logit_distill distill_add_tail distill_coef distill_wrong_only distill_certified_only \
            distill_key_ablation_gate distill_key_ablation_gate_mode \
            distill_key_ablation_tau \
            distill_key_ablation_saturation distill_key_ablation_field_tag \

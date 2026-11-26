@@ -1,4 +1,4 @@
-"""Exercise the pilot's distillation loss, including padding and uncertified rows."""
+"""Verify selector gradients, the distillation denominator and the packed Qwen forward."""
 from types import SimpleNamespace
 import torch
 from verl.trainer.ppo.core_algos import _opsd_distill_term, _random_gate_matching_counts
@@ -33,6 +33,44 @@ for mode in ["goldside_js_hard", "goldside_js_random_matched"]:
     assert abs(metrics["distill_keyabl_gate_active_ratio"] - .5) < 1e-6
     assert torch.isfinite(loss) and loss.item() > 0
     print(mode, "loss", loss.item(), "gradient positions per row", active.sum(1).tolist())
+
+# Use variable KL values and CF budgets of 2, 0 and 4 on certified rows.
+# Uncertified rows and padding have large scores to expose selection leaks.
+valid = torch.tensor([[1, 1, 1, 1, 0]] * 4, dtype=torch.bool)
+certified = torch.tensor([True, False, True, True])
+eligible = valid & certified[:, None]
+gold_probs = torch.tensor([.6, .3, .1], dtype=torch.float64).expand(4, 5, 3)
+cf_top = gold_probs[..., :2].clone()
+flip = gold_probs.new_tensor([.05, .90])
+cf_top[0, [0, 1, 4]] = flip
+cf_top[1] = flip
+cf_top[3] = flip
+probs = gold_probs.new_tensor([[.59, .30, .11], [.74, .2599, .0001], [.43, .23, .34],
+                      [.25, .15, .60], [.01, .01, .98]]).expand(4, 5, 3)
+kl = (probs * (probs.log() - gold_probs.log())).sum(-1)
+# Large importance weights on other positions must not change the ranking.
+weights = torch.tensor([10000., 100., 1., 1., 1.]).expand_as(valid)
+for mode in ("goldside_js_random_matched", "goldside_js_kl_matched", "certified_dense"):
+    dense = mode == "certified_dense"
+    config = SimpleNamespace(policy_loss=dict(
+        distill_key_ablation_gate=not dense, distill_key_ablation_gate_mode=mode,
+        distill_certified_only=dense, distill_key_ablation_tau=.1, beta=1., jsd_token_clip=0.,
+        full_logit_distill=True, top_k_distill=2))
+    student = probs[..., :2].log().clone().requires_grad_()
+    inputs = dict(teacher_log_probs=gold_probs[..., 0].log(), teacher_topk_log_probs=gold_probs[..., :2].log(),
+                  student_topk_log_probs=student, distill_key_ablation_sample_mask=certified)
+    if not dense:
+        inputs.update(teacher_keyabl_topk_log_probs=cf_top.log(), teacher_keyabl_log_probs=cf_top[..., 0].log())
+    loss, _ = _opsd_distill_term(student[..., 0], valid, config, weights, **inputs)
+    loss.backward()
+    active = student.grad.abs().sum(-1) > 0
+    assert not (active & ~eligible).any()
+    assert active.sum(1).tolist() == ([4, 0, 4, 4] if dense else [2, 0, 0, 4])
+    if mode == "goldside_js_kl_matched":
+        assert active[0].tolist() == [False, False, True, True, False]
+    torch.testing.assert_close(loss.detach(), (weights * kl * active).sum() / eligible.sum(),
+                               atol=1e-10, rtol=1e-10)
+    print(mode, "verified gradients and eligible-token denominator")
 
 # The Qwen3 memory-saving path must preserve both token probabilities and gradients.
 from omegaconf import OmegaConf

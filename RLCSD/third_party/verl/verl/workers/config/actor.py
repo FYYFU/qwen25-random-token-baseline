@@ -132,6 +132,8 @@ class PolicyLossConfig(BaseConfig):
     # denominator remains all otherwise-eligible response tokens, so the
     # effective distill dose decays with the rollout error rate.
     distill_wrong_only: bool = False
+    # Limit the distillation loss to certified QA rows, including for dense OPSD.
+    distill_certified_only: bool = False
     # Gate OPSD with a detached contrast between the gold-only and
     # counterfactual prompts. The gold view remains the distillation target.
     distill_key_ablation_gate: bool = False

@@ -2803,7 +2803,7 @@ def _distill_eligibility_mask(response_mask, config, kwargs):
     move when the math fraction of the mix changes. Returns (mask, ratio) where
     ratio is NaN when the flag is off, since metric keys must be constant.
     """
-    if _sd_bool_cfg(config, "distill_key_ablation_gate", False):
+    if _sd_bool_cfg(config, "distill_key_ablation_gate", False) or _sd_bool_cfg(config, "distill_certified_only", False):
         keyabl_mask = _sd_expand_sample_mask(
             kwargs.get("distill_key_ablation_sample_mask"),
             response_mask,
@@ -2825,14 +2825,19 @@ def _distill_eligibility_mask(response_mask, config, kwargs):
     return gate, ratio
 
 
-def _random_gate_matching_counts(hard_gate, eligible_mask):
-    """Uniformly sample K eligible positions per rollout, including K=0."""
+def _gate_matching_counts(hard_gate, eligible_mask, priority):
+    """Select the lowest K priority values within each rollout, breaking ties by position."""
     eligible = eligible_mask.bool()
     counts = (hard_gate.bool() & eligible).sum(dim=-1, keepdim=True)
-    keys = torch.rand(eligible.shape, device=eligible.device, dtype=torch.float64)
-    order = keys.masked_fill(~eligible, float("inf")).argsort(dim=-1)
+    order = priority.detach().masked_fill(~eligible, float("inf")).argsort(dim=-1, stable=True)
     first_k = torch.arange(order.size(-1), device=order.device) < counts
     return torch.zeros_like(eligible).scatter_(-1, order, first_k)
+
+
+def _random_gate_matching_counts(hard_gate, eligible_mask):
+    """Uniformly sample K eligible positions per rollout, including K=0."""
+    keys = torch.rand(eligible_mask.shape, device=eligible_mask.device, dtype=torch.float64)
+    return _gate_matching_counts(hard_gate, eligible_mask, keys)
 
 
 def _opsd_distill_term(log_prob, response_mask, config, rollout_is_weights, **kwargs):
@@ -2882,6 +2887,13 @@ def _opsd_distill_term(log_prob, response_mask, config, rollout_is_weights, **kw
         per_token_loss = (teacher_lp.detach() - log_prob).pow(2)
         if jsd_token_clip > 0:
             per_token_loss = per_token_loss.clamp(max=jsd_token_clip)
+
+    gate_mode = str(_sd_cfg(config, "distill_key_ablation_gate_mode", "sampled_negative_soft"))
+    if gate_mode == "goldside_js_kl_matched":
+        if not full_logit_distill or beta != 1.0 or jsd_token_clip > 0:
+            raise ValueError("KL-ranked selection requires full_logit_distill, beta=1 and unclipped KL")
+        # Rank by the same reverse KL used for distillation, before optional loss weights.
+        token_reverse_kl = per_token_loss.detach()
 
     # ---- Forward-pull term (2026-08-31, additive; "none" is byte-identical
     # to the 20260829 parent). See _sd_forward_pull_term for the mechanism.
@@ -2994,11 +3006,6 @@ def _opsd_distill_term(log_prob, response_mask, config, rollout_is_weights, **kw
                 "key-ablated teacher sampled log probabilities are non-finite"
             )
 
-        gate_mode = str(_sd_cfg(
-            config,
-            "distill_key_ablation_gate_mode",
-            "sampled_negative_soft",
-        ))
         tau = float(_sd_cfg(config, "distill_key_ablation_tau", 0.1))
         sampled_shift = (
             teacher_lp.detach() - teacher_keyabl_lp.detach()
@@ -3032,7 +3039,7 @@ def _opsd_distill_term(log_prob, response_mask, config, rollout_is_weights, **kw
                     interpolated_gate,
                 ),
             ).detach()
-        elif gate_mode in ("goldside_js_hard", "goldside_js_random_matched"):
+        elif gate_mode in ("goldside_js_hard", "goldside_js_random_matched", "goldside_js_kl_matched"):
             if not math.isfinite(tau) or not 0.0 <= tau <= 1.0:
                 raise ValueError(
                     "gold-side JS hard gate requires 0 <= tau <= 1; "
@@ -3062,6 +3069,8 @@ def _opsd_distill_term(log_prob, response_mask, config, rollout_is_weights, **kw
             ).detach()
             if gate_mode == "goldside_js_random_matched":
                 keyabl_gate = _random_gate_matching_counts(keyabl_gate, distill_mask).to(per_token_loss.dtype)
+            elif gate_mode == "goldside_js_kl_matched":
+                keyabl_gate = _gate_matching_counts(keyabl_gate, distill_mask, -token_reverse_kl).to(per_token_loss.dtype)
 
             eligible_goldjs = torch.masked_select(
                 goldside_js.float(), distill_mask.to(dtype=torch.bool)

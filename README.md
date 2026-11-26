@@ -1,6 +1,14 @@
-# Qwen2.5-1.5B Random token baseline
+# Qwen2.5-1.5B 蒸馏 token 选择对照实验
 
-在 Qwen2.5-1.5B-Instruct 上复现与 CF-OPSDL 蒸馏预算匹配的 Random 对照。对每条符合蒸馏条件的回答，先按历史 CF 门限计算有效 token 数 K，再在这条回答的有效位置中均匀、无放回地抽取 K 个。两次教师前向、蒸馏目标、损失分母和 GRPO 奖励均沿用原设置。正式任务只训练一个 Random 模型，比较点为第 41 步。
+三组实验从同一 Qwen2.5-1.5B-Instruct 快照分别训练，共用 v5 的 21,005 条 GRPO 训练样本、相同的奖励与过滤规则、蒸馏系数 **μ=0.03**。14,981 条多跳 QA 中有 **10,320 条**通过反事实认证。三组都只在通过认证的 QA 回答上计算蒸馏，使用金证据教师和相同的损失分母（符合条件的有效回答 token）。正式比较使用各组的 **step 41**。[数据清单](data/full/manifest.json)
+
+| 启动参数 | 每条认证回答的蒸馏位置 | 教师前向 |
+|---|---|---|
+| `random` | 用 CF 门限计算该回答的 K，均匀、无放回地选 K 个有效位置 | 金证据与反事实各一次 |
+| `kl-topk` | 用同一规则计算 K，按学生对金证据教师的逐位置反向 KL 从大到小选 K 个；同分按位置先后排序 | 金证据与反事实各一次 |
+| `certified-dense` | 该回答的全部有效位置 | 仅金证据 |
+
+两个稀疏实验都在本组当前生成的回答上计算 K。反向 KL 沿用原蒸馏实现，在教师概率最高的 100 个词和一个合并的尾部词表桶上计算。词表大小 100 和回答中选出的位置数 K 是两个不同的量。
 
 ## 训练
 
@@ -33,19 +41,28 @@ python -m pip install -r requirements-linux-cu128.lock
 MAX_JOBS=4 python -m pip install --no-build-isolation flash-attn==2.8.1
 python -m pip check
 python scripts/prepare.py full
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 ./run.sh full
 ```
 
-首次运行自动下载并校验基础模型 revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`。离线运行时，可设置 `MODEL_PATH` 指向该 revision 的本地快照。训练器和 Random 选择器随仓库交付。正式档使用历史分片顺序、shuffle 和原 data seed，默认由 Ray 分配对象存储。启动前为 5 个分布式检查点预留磁盘空间。
+三组可以分发到三台机器，每位协作者在完成安装后运行分配给自己的那一条。共用一台八卡机器时，依次执行三条命令。
 
-如需先验证环境，使用 `CUDA_VISIBLE_DEVICES=0,1,2,3 ./run.sh pilot`。试跑独立从基础模型开始，固定 data seed 为 42。历史四卡 RTX 6000 Ada 试跑中，单步耗时 70.54 秒，8 题中有 1 题通过过滤，4 个 rank 均测到参数变化。[试跑指标](reference/pilot_metrics.jsonl) · [各卡显存与权重变化](reference/pilot_hardware.json)
+```bash
+./run.sh full random
+./run.sh full kl-topk
+./run.sh full certified-dense
+```
+
+正式档默认使用 GPU 0–7，也可用 `CUDA_VISIBLE_DEVICES` 指定八张卡。每次启动会创建独立运行目录，如 `runs/full/kl-topk_<时间戳>.<ID>`，其中的 `trial.yaml` 记录实际配置。旧命令 `./run.sh full` 等价于 `./run.sh full random`。
+
+首次运行自动下载并校验基础模型 revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`。离线运行时，可设置 `MODEL_PATH` 指向该 revision 的本地快照。训练器和三个对照的实现均随仓库交付。正式档使用历史分片顺序、shuffle 和原 data seed，默认由 Ray 分配对象存储。每组训练会保存 5 个分布式检查点。
+
+如需先验证环境，可将上述命令中的 `full` 换成 `pilot`，例如 `CUDA_VISIBLE_DEVICES=0,1,2,3 ./run.sh pilot kl-topk`。试跑独立从基础模型开始，固定 data seed 为 42。历史 Random 四卡 RTX 6000 Ada 试跑中，单步耗时 70.54 秒，8 题中有 1 题通过过滤，4 个 rank 均测到参数变化。[试跑指标](reference/pilot_metrics.jsonl) · [各卡显存与权重变化](reference/pilot_hardware.json)
 
 ### 数据与输出
 
 - `data/full/` 含 v5 counterfactual 的 10 个训练 Parquet、1 个验证 Parquet、原 manifest 与校验和。训练包括 HotpotQA、MuSiQue、2Wiki 的六个 QA 分片，以及 MathQA、DAPO、RULER multikey 和 multivalue。每个 epoch 包含 41 个完整 batch，末尾 13 条按原规则丢弃。验证文件含 20 条 MathQA，历史配置最多加载 1 条，训练中关闭验证。
 - `data/pilot/` 含三类 QA 各 4 条认证训练样本及合计 3 条验证样本。正式训练和全部评测数据均随 Git LFS 交付。
 - 启动器会打印形如 `runs/full/<run-id>` 的目录。运行 `python scripts/report.py runs/full/<run-id>` 可查看每步耗时、过滤后保留回答数、各 rank 实际测到的参数变化次数，以及每张卡的显存峰值。显存按 0.25 秒采样，同时记录本任务及整卡用量。
-- 交付结果时保留 `trial.yaml`、`metrics.jsonl`、`gpu.csv`、各 rank 的 `optimizer_rank*.jsonl` 和 step 41 actor，并注明 GPU 型号。正式八卡 Random 的成绩需由该次训练与评测产生。
+- 交付结果时保留 `trial.yaml`、`metrics.jsonl`、`gpu.csv`、各 rank 的 `optimizer_rank*.jsonl` 和 step 41 actor，并注明 GPU 型号。交付时标明实验名，并分别保存三个 step 41 的评测结果。
 
 ## 评测第 41 步
 

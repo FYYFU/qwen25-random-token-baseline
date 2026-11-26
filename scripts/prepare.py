@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+EXPERIMENTS = ("random", "kl-topk", "certified-dense")
 MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
 REVISION = "989aa7980e4cf806f80c7fef2b1adb7bc71aa306"
 WEIGHTS_SHA256 = "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee"
@@ -66,9 +67,16 @@ def model_dir():
             raise SystemExit(f"Unexpected revision of {name}")
     return path
 
-def write_config(profile, train, val, model, target):
+def write_config(profile, train, val, model, target, experiment="random"):
     import yaml
     cfg = yaml.safe_load((ROOT / "configs/random.yaml").read_text())
+    if experiment == "kl-topk":
+        cfg["distill_key_ablation_gate_mode"] = "goldside_js_kl_matched"
+    elif experiment == "certified-dense":
+        cfg.update(distill_key_ablation_gate=False, distill_certified_only=True)
+        del cfg["distill_key_ablation_gate_mode"]
+    elif experiment != "random":
+        raise ValueError(f"Unknown experiment: {experiment}")
     if profile == "pilot":
         cfg.update(per_device_batch_size=2, ppo_mini_batch_size=8, total_training_steps=1,
                    data_seed=42, val_max_samples=-1, save_steps=-1, n_gpus_per_node=4,
@@ -77,13 +85,14 @@ def write_config(profile, train, val, model, target):
     target = target.resolve()
     cfg.update(model_path=str(model), train_files=[str(p) for p in train],
                val_files=[str(val)], custom_reward_function_path=str(ROOT / "training/loongrl_reward_repro.py"),
-               experiment_name=f"qwen25_random_{profile}", output_dir=str(target.parent))
+               experiment_name=f"qwen25_{experiment.replace('-', '_')}_{profile}", output_dir=str(target.parent))
     target.write_text(yaml.safe_dump(cfg, sort_keys=False))
     print(f"Saved {target}")
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=("pilot", "full"))
+    parser.add_argument("--experiment", choices=EXPERIMENTS, default="random")
     parser.add_argument("--output-config", type=Path,
                         help="also prepare the pinned model and write the launch config into a run directory")
     args = parser.parse_args()
@@ -91,7 +100,7 @@ def main():
     print(f"Verified {len(train)} training parquet(s) and {val.name} for {args.profile}.")
     if args.output_config is None:
         return
-    write_config(args.profile, train, val, model_dir(), args.output_config)
+    write_config(args.profile, train, val, model_dir(), args.output_config, args.experiment)
 
 if __name__ == "__main__":
     main()

@@ -1674,7 +1674,9 @@ class DataParallelPPOActor(BasePPOActor):
                             "sampled_negative_soft",
                         ))
                         keyabl_topk_indices = None
-                        if keyabl_gate_mode in ("goldside_js_hard", "goldside_js_random_matched"):
+                        goldside_gate = keyabl_gate_mode in (
+                            "goldside_js_hard", "goldside_js_random_matched", "goldside_js_kl_matched")
+                        if goldside_gate:
                             assert use_sparse_topk and teacher_topk_indices is not None, (
                                 "gold-side JS hard gate requires "
                                 "full_logit_distill=true and top_k_distill > 0"
@@ -1701,7 +1703,7 @@ class DataParallelPPOActor(BasePPOActor):
                                 "sampled negative gate teacher forward must return "
                                 "sampled-token log probabilities only"
                             )
-                        elif keyabl_gate_mode in ("goldside_js_hard", "goldside_js_random_matched"):
+                        elif goldside_gate:
                             assert "all_log_probs" not in teacher_keyabl_outputs
                             assert "topk_indices" not in teacher_keyabl_outputs
                             teacher_keyabl_topk_log_probs = (
