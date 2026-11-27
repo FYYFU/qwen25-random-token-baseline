@@ -12,6 +12,8 @@
 
 ## 训练
 
+在 OBX 上运行时，按[英文提交指南](obx/README.md)为每组实验提交一个单节点 8×H200 作业。作业会训练到 step 41，合并 checkpoint，完成长、短上下文评测，并将结果写入 S3。
+
 | 参数 | 正式实验 `full` | 小样本试跑 `pilot` |
 |---|---:|---:|
 | GPU / rollout tensor parallel | 8 / 2 | 4 / 1 |

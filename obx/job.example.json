@@ -1,0 +1,54 @@
+{
+  "JobName": "qwen25-rebuttal-random",
+  "InitiativeId": "YOUR_INITIATIVE",
+  "region": "ap-south-1",
+  "Role": "YOUR_OBX_ROLE_ARN",
+  "InstanceCount": 1,
+  "InstanceType": "p5en.48xlarge",
+  "JobType": "OBX",
+  "IsProduction": false,
+  "EstimatedExecutionDuration": 4320,
+  "BatchJobDefinitionParameters": {
+    "jobDefinitionName": "qwen25-rebuttal-random",
+    "type": "multinode",
+    "nodeProperties": {
+      "mainNode": 0,
+      "numNodes": 1,
+      "nodeRangeProperties": [
+        {
+          "targetNodes": "0:0",
+          "container": {
+            "image": "YOUR_OBX_IMAGE_WITH_BOTH_ENVIRONMENTS",
+            "command": [
+              "bash",
+              "-c",
+              "set -euo pipefail; work=$(mktemp -d); cd \"$work\"; aws s3 cp \"$CODE_S3_URI\" code.tar.gz --only-show-errors; tar -xzf code.tar.gz; bash obx/train-eval.sh \"$EXPERIMENT\""
+            ],
+            "environment": [
+              {
+                "name": "EXPERIMENT",
+                "value": "random"
+              },
+              {
+                "name": "CODE_S3_URI",
+                "value": "s3://YOUR-BUCKET/rebuttal/code.tar.gz"
+              },
+              {
+                "name": "OUTPUT_S3",
+                "value": "s3://YOUR-BUCKET/rebuttal/results"
+              },
+              {
+                "name": "TRAIN_PYTHON",
+                "value": "/opt/train/bin/python"
+              },
+              {
+                "name": "EVAL_PYTHON",
+                "value": "/opt/eval/bin/python"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
