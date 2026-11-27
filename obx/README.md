@@ -19,7 +19,7 @@ git lfs pull
 
 CODE_S3_URI="s3://YOUR-BUCKET/rebuttal/code-$(git rev-parse --short HEAD).tar.gz"
 bundle=$(mktemp -d)
-git ls-files -z | tar -czf "$bundle/code.tar.gz" --null -T -
+git ls-files -z | COPYFILE_DISABLE=1 tar -czf "$bundle/code.tar.gz" --null -T -
 aws s3 cp "$bundle/code.tar.gz" "$CODE_S3_URI"
 echo "$CODE_S3_URI"
 ```
