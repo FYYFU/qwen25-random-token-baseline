@@ -28,14 +28,13 @@ aws s3 sync "$model" "$dest/merged-step41/" --only-show-errors
 save_eval() {
     status=$?
     if [[ -d "$results" ]]; then
-        aws s3 sync "$results" "$dest/eval-step41/" --exclude 'short/hf_home/*' --only-show-errors || status=1
+        aws s3 sync "$results" "$dest/eval-step41/" --only-show-errors || status=1
     fi
     rm -f "$log"
     exit "$status"
 }
 trap save_eval EXIT
-"$EVAL_PYTHON" eval/run.py generate "$model" "$results"
-CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES%%,*}" "$EVAL_PYTHON" eval/short/run.py "$model" "$results/short"
+"$EVAL_PYTHON" eval/run.py generate --longbench-only "$model" "$results"
 "$EVAL_PYTHON" eval/run.py judge "$results"
-"$EVAL_PYTHON" eval/run.py report "$results"
-echo "Result files: $dest/eval-step41/scores.json and $dest/eval-step41/short/scores.json"
+"$EVAL_PYTHON" eval/run.py report --longbench-only "$results"
+echo "LongBench QA scores: $dest/eval-step41/scores.json"

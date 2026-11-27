@@ -17,33 +17,35 @@ python eval/run.py merge "$ACTOR" "$MODEL"
 
 分别评测三个实验，每次将 `<run-id>` 替换为带有该实验名前缀的实际目录名。后续命令沿用同一个 shell 中的 `MODEL` 和 `RESULTS`。
 
-## 2. 准备评测环境
+## 2. 准备 LongBench QA 评测环境
 
-原评测使用 vLLM 0.12.0。单独建立 Python 3.11 环境保留原生成版本；训练继续使用仓库根目录的 `.venv`。运行以下命令安装三组评测所需依赖。短上下文使用历史 lm-evaluation-harness commit `b954108c9baaaa934b4ad842033b31a97ee30816`。IFEval 需要 NLTK 的句子分词资源。
+本次 OBX 作业只评测 LongBench QA。单独建立 Python 3.11 环境，使用历史生成版本 vLLM 0.12.0 和 Bedrock 判分依赖。
 
 ```bash
 python3.11 -m venv .venv-eval
 source .venv-eval/bin/activate
 python -m pip install --upgrade pip wheel
-python -m pip install -r eval/short/requirements.txt -r eval/requirements-judge.txt
-python -m nltk.downloader punkt_tab
+python -m pip install -r eval/requirements-generate.txt -r eval/requirements-judge.txt
 python -m pip check
-(cd data/eval && sha256sum -c checksums.sha256)
+(cd data/eval && awk '$2 ~ /^longbench\//' checksums.sha256 | sha256sum -c -)
 ```
 
-## 3. LongBench QA 与 LongReason
+## 3. LongBench QA
 
 ```bash
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python eval/run.py generate "$MODEL" "$RESULTS"
+CUDA_VISIBLE_DEVICES=0 python eval/run.py generate --longbench-only "$MODEL" "$RESULTS"
 python eval/run.py judge "$RESULTS"
-python eval/run.py report "$RESULTS"
+python eval/run.py report --longbench-only "$RESULTS"
 ```
 
-- **生成。** 两套任务均使用 bf16、TP=1、vLLM 显存比例 0.92、temperature=1、top-p=1、每题 5 个样本、基础 seed=0、每题 seed 加题号、生成上限 8,192 token、16 个客户端线程。不同输入窗口需要不同的 vLLM 实例。一次评估一个 checkpoint 时，启动器最多同时用 5 张卡，分别处理 QA 和 4 个长度档。传入较少卡号时，其余任务依次排队。重复运行会复用同一模型已完成且通过样本检查的单元。
+- **生成。** LongBench 使用一张 GPU、bf16、TP=1、vLLM 显存比例 0.92、temperature=1、top-p=1、每题 5 个样本、基础 seed=0、每题 seed 加题号、生成上限 8,192 token、16 个客户端线程。重复运行会复用同一模型已完成且通过样本检查的生成记录。
 - **LongBench QA。** 2WikiMQA、HotpotQA、MuSiQue、NarrativeQA、Qasper 各 200 题，共 5,000 条回答。沿用 `think` + `passages` 模板、32,768 token 输入预算和中间截断。每题从回答中解析最终答案，对样本取 `max(sub_EM, ORM)`，先对任务内样本平均，再等权平均五项。
 - **LongBench 判分。** `judge` 会用当前 AWS 身份调用 Bedrock，在 `ap-south-1` 使用 `openai.gpt-oss-120b-1:0`，会产生调用费用。需要能够调用该模型的 AWS profile、环境凭据或实例角色。仅将需要判分的题目、模型答案和参考答案发给判分模型。temperature=0，输出上限 512 token，64 个线程。中断或凭据失效时可重新执行，跳过已完成的判定。未完成判分时 `report` 会报错。
-- **LongReason。** 固定修订 `2b080b67248d3faa575a143c2d300e6fa1bb21c9`。8K、16K、32K、64K 各有相同的 794 个题号，每档 3,970 条回答。使用训练匹配的 `think_mcq` 提示和未编号的上下文。从完整回答按原 lenient 规则提取选项，对四档等权平均。保留 1,024 token 余量，超预算样本按历史规则记零。原始回答以 gzip 保存。
-- **结果。** 各任务的服务与生成日志位于 `$RESULTS/*.log`。逐条回答和 QA 判分记录位于 `longbench/model/`、`longreason/{8k,16k,32k,64k}/`。汇总写入 `$RESULTS/scores.json`。脚本检查每个题号与采样号是否齐全、参考答案是否对齐，以及是否存在请求失败或未解决的判分。
+- **结果。** 逐条回答和判分记录位于 `$RESULTS/longbench/model/`，五项得分及等权均分写入 `$RESULTS/scores.json`。脚本检查每个题号与采样号是否齐全、参考答案是否对齐，以及是否存在请求失败或未解决的判分。
+
+### 历史 LongReason 复现
+
+历史全套长上下文复现可使用完整评测数据，运行上述 `generate` 和 `report` 命令时去掉 `--longbench-only`。该模式同时生成 LongBench 和 LongReason，最多并行使用五张 GPU。LongReason 固定修订 `2b080b67248d3faa575a143c2d300e6fa1bb21c9`。8K、16K、32K、64K 各有相同的 794 个题号，每档 3,970 条回答。使用 `think_mcq` 提示和未编号的上下文，按 lenient 规则提取选项，等权平均四档准确率。保留 1,024 token 余量，超预算样本按历史规则记零。
 
 | 评测单元 | 服务窗口 | max-num-seqs | YaRN |
 |---|---:|---:|---:|
@@ -53,9 +55,11 @@ python eval/run.py report "$RESULTS"
 | LongReason 32K | 41,984 | 32 | ×2 |
 | LongReason 64K | 73,728 | 16 | ×3 |
 
-## 4. 六项短上下文评测
+## 4. 历史六项短上下文评测
 
 ```bash
+python -m pip install -r eval/short/requirements.txt
+python -m nltk.downloader punkt_tab
 CUDA_VISIBLE_DEVICES=0 python eval/short/run.py "$MODEL" "$RESULTS/short"
 ```
 

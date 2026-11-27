@@ -12,7 +12,7 @@
 
 ## 训练
 
-在 OBX 上运行时，按[英文提交指南](obx/README.md)为每组实验提交一个单节点 8×H200 作业。作业会训练到 step 41，合并 checkpoint，完成长、短上下文评测，并将结果写入 S3。
+在 OBX 上运行时，按[英文提交指南](obx/README.md)为每组实验提交一个单节点 8×H200 作业。作业会训练到 step 41，合并 checkpoint，只评测 LongBench QA 五项任务，并将各项得分和平均分写入 S3。
 
 | 参数 | 正式实验 `full` | 小样本试跑 `pilot` |
 |---|---:|---:|
@@ -68,6 +68,6 @@ python scripts/prepare.py full
 
 ## 评测第 41 步
 
-[完整评测步骤与参数](eval/README.md) 包含 FSDP 合并、五项 LongBench QA、LongReason 8K–64K 和六项短上下文评测的启动命令。LongBench QA 使用 AWS Bedrock GPT-OSS-120B 判分。LongReason 与短上下文评测均可用本地数据打分。
+本次三组对照均用 AWS Bedrock GPT-OSS-120B 给 LongBench QA 判分。手动运行和恢复判分的命令见[评测说明](eval/README.md)。
 
 作为核对，历史 1.5B CF 的 step 41 在 LongBench QA 上均分为 **46.64**，LongReason 均分为 **43.38**。这两组数值已由历史逐条记录回算。[历史 CF 各项成绩](reference/step41_cf_scores.json)

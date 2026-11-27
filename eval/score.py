@@ -3,7 +3,6 @@ import gzip
 import json
 from pathlib import Path
 from statistics import mean
-from longreason.rescore_lenient import lenient_letter
 
 TASKS = ("2wikimqa", "hotpotqa", "musique", "narrativeqa", "qasper")
 TIERS = ("8k", "16k", "32k", "64k")
@@ -48,6 +47,8 @@ def longbench(directory, *, judged):
     return {t: 100 * mean(scores[t,q,s] for q in range(200) for s in range(5)) for t in TASKS}
 
 def longreason(directory, tier):
+    from longreason.rescore_lenient import lenient_letter
+
     expected = {(q,s) for q in range(794) for s in range(5)}
     with (DATA / "longreason" / f"{tier}.jsonl").open() as stream:
         inputs = {r["qidx"]: (r["answer"], r["n_options"]) for r in map(json.loads, stream)}
@@ -67,8 +68,9 @@ def longreason(directory, tier):
     check_keys(scores.keys(), expected, tier)
     return 100 * mean(scores.values())
 
-def table(root):
-    qa = longbench(root / "longbench/model", judged=True)
-    lr = {t: longreason(root / "longreason" / t, t) for t in TIERS}
+def table(root, *, longbench_only=False):
+    suites = {"LongBench QA": longbench(root / "longbench/model", judged=True)}
+    if not longbench_only:
+        suites["LongReason"] = {t: longreason(root / "longreason" / t, t) for t in TIERS}
     return {name: {k: round(v, 2) for k, v in {**values, "avg": mean(values.values())}.items()}
-            for name, values in (("LongBench QA", qa), ("LongReason", lr))}
+            for name, values in suites.items()}

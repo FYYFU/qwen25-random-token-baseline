@@ -30,9 +30,11 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def verify_inputs():
+def verify_inputs(*, longbench_only=False):
     for line in (score.DATA / "checksums.sha256").read_text().splitlines():
         expected, name = line.split(maxsplit=1)
+        if longbench_only and not name.startswith("longbench/"):
+            continue
         if digest(score.DATA / name) != expected:
             raise ValueError(f"Incorrect or missing LFS input {name}. Run git lfs pull.")
 
@@ -162,11 +164,11 @@ async def run_unit(unit, gpu, model, root):
     print(f"Completed {unit}", flush=True)
 
 
-async def generate(model, root):
+async def generate(model, root, *, longbench_only=False):
     devices = os.environ.get("CUDA_VISIBLE_DEVICES", "0,1,2,3,4,5,6,7").split(",")
     if any(not d.isdigit() for d in devices) or len(set(devices)) != len(devices):
         raise ValueError("CUDA_VISIBLE_DEVICES must list distinct numeric GPU indices")
-    verify_inputs()
+    verify_inputs(longbench_only=longbench_only)
     fingerprint = {"model": model_files(model), "inputs": digest(score.DATA / "checksums.sha256")}
     manifest = root / "generation_inputs.json"
     if manifest.exists():
@@ -178,7 +180,7 @@ async def generate(model, root):
         tmp = manifest.with_suffix(".tmp")
         tmp.write_text(json.dumps(fingerprint, indent=2) + "\n")
         tmp.replace(manifest)
-    units = list(UNITS)
+    units = ["longbench"] if longbench_only else list(UNITS)
     async def worker(i, gpu):
         for unit in units[i::len(devices)]:
             await run_unit(unit, gpu, model, root)
@@ -205,8 +207,11 @@ def main():
     m.add_argument("model", type=Path)
     g = sub.add_parser("generate", help="generate LongBench and LongReason with single-GPU replicas")
     g.add_argument("model", type=Path)
-    for cmd in (g, sub.add_parser("judge", help="score unresolved LongBench answers via AWS Bedrock"),
-                sub.add_parser("report", help="validate and score both long-context suites offline")):
+    j = sub.add_parser("judge", help="score unresolved LongBench answers via AWS Bedrock")
+    r = sub.add_parser("report", help="validate and score completed generation and judgment records offline")
+    for cmd in (g, r):
+        cmd.add_argument("--longbench-only", action="store_true", help="evaluate only the five LongBench QA tasks")
+    for cmd in (g, j, r):
         cmd.add_argument("results", type=Path)
     args = p.parse_args()
     if args.action == "merge":
@@ -217,11 +222,11 @@ def main():
         p.error(f"Results directory does not exist: {root}")
     with lock(root):
         if args.action == "generate":
-            asyncio.run(generate(args.model.resolve(), root))
+            asyncio.run(generate(args.model.resolve(), root, longbench_only=args.longbench_only))
         elif args.action == "judge":
             judge(root)
         else:
-            report = json.dumps(score.table(root), indent=2)
+            report = json.dumps(score.table(root, longbench_only=args.longbench_only), indent=2)
             (root / "scores.json").write_text(report + "\n")
             print(report)
 
